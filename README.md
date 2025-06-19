@@ -1,10 +1,10 @@
 # Self-Prompting QA System
 
-🚀 **Enhanced Web Interface for Self-Prompting Large Language Models for Zero-Shot Open-Domain QA**
+**Enhanced Web Interface for Self-Prompting Large Language Models for Zero-Shot Open-Domain QA**
 
 This project implements a comprehensive **Self-Prompting Question Answering System** with an intuitive web interface, featuring advanced clustering algorithms, topic coherence analysis, and model comparison capabilities.
 
-## 📋 Table of Contents
+## Table of Contents
 - [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -14,29 +14,29 @@ This project implements a comprehensive **Self-Prompting Question Answering Syst
 - [Enhancements](#enhancements)
 - [Citation](#citation)
 
-## 🌟 Features
+## Features
 
-### 🎯 **Core Functionality**
+### **Core Functionality**
 - **QA Pair Generation**: Generate diverse question-answer pairs using Flan-T5 models
 - **Advanced Clustering**: Multiple algorithms (K-Means, Hierarchical, Spectral, Gaussian Mixture)
 - **Smart Example Selection**: Intelligent selection of representative examples from clusters  
 - **Model Comparison**: Side-by-side comparison of different language models
 - **Topic Coherence Analysis**: Advanced metrics for evaluating clustering quality
 
-### 🎨 **Web Interface**
+### **Web Interface**
 - **Clean Modern UI**: Professional white/black minimalist design
 - **Real-time Metrics**: Live display of clustering and inference metrics
 - **Interactive Pipeline**: Step-by-step workflow visualization
 - **Responsive Design**: Works seamlessly across different screen sizes
 - **Question Diversity**: Enhanced question generation with 10+ categories
 
-### 📊 **Advanced Metrics**
+### **Advanced Metrics**
 - **Clustering Metrics**: Silhouette Score, Topic Coherence, Calinski-Harabasz Index
 - **Model Efficiency**: Speed analysis, quality comparison, efficiency scoring
 - **Quality Assessment**: BLEU scores, semantic similarity, factual accuracy
 - **Performance Insights**: Detailed model performance breakdowns
 
-## 🛠 Installation
+## Installation
 
 ### Prerequisites
 - Python 3.8+
@@ -63,7 +63,7 @@ pip install -r requirements.txt
 ### 4. Setup API Keys (Optional)
 For enhanced functionality, create `./related_files/openai_api.txt` with your OpenAI API key.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Start Web Interface
 ```bash
@@ -78,37 +78,37 @@ Navigate to `http://localhost:5001` in your browser.
 3. **Select**: Choose representative examples from each cluster
 4. **Inference**: Test questions with multiple models and compare results
 
-## 🌐 Web Interface Guide
+## Web Interface Guide
 
-### 1. **Data Generation** 📝
+### 1. **Data Generation** 
 - Enter topics (comma-separated): `science, technology, history, mathematics`
 - Set QA pairs per topic: `3-5` recommended
 - Click **Generate QA Pairs**
 - View metrics: Generation time, topic diversity, question quality
 
-### 2. **Clustering** 🔍  
+### 2. **Clustering**   
 - Configure cluster range: `[2, 3, 4, 5]` for optimal results
 - Click **Perform Clustering**
 - Monitor metrics: Silhouette Score (>0.4 excellent), Topic Coherence (>60% good)
 - View cluster topics and sizes
 
-### 3. **Example Selection** 🎯
+### 3. **Example Selection** 
 - Set max examples per cluster: `2-3` recommended  
 - Click **Select Examples**
 - Review selection metrics and cluster representatives
 
-### 4. **Model Inference** 🤖
+### 4. **Model Inference** 
 - Enter test question or select from generated questions
 - Choose model comparison mode: Flan-T5 vs DistilBERT
 - Click **Run Inference**
 - Analyze detailed comparison metrics
 
-### 5. **Question Generation** 🎨
+### 5. **Question Generation** 
 - Generate diverse questions from clusters automatically
 - 10+ question categories: Definition, Benefits, Challenges, Mechanics, Future, etc.
 - Test generated questions with model comparison
 
-## 📡 API Documentation
+## API Documentation
 
 ### Generate QA Pairs
 ```bash
@@ -144,7 +144,7 @@ POST /api/inference
 }
 ```
 
-## 🔧 Technical Details
+## Technical Details
 
 ### Core Components
 - **`self_prompting_pipeline.py`**: Main pipeline orchestration
@@ -163,27 +163,27 @@ POST /api/inference
 - **DistilBERT**: Lightweight BERT variant
 - **GPT-based models**: Via OpenAI API (optional)
 
-## 🎉 Recent Enhancements
+## Recent Enhancements
 
-### ✅ **Question Diversity Enhancement**
+### **Question Diversity Enhancement**
 - **10 Question Categories**: Definition, Benefits, Challenges, Mechanics, Future, Comparison, Practical, Technical, Impact, Learning
 - **Smart Category Selection**: AI-powered relevance matching
 - **100% Unique Questions**: Zero repetition across categories
 - **4 Templates per Category**: Maximum variety within each type
 
-### ✅ **Topic Coherence Fix**
+### **Topic Coherence Fix**
 - **Enhanced Algorithm**: Robust topic inference with 150+ keywords
 - **Fallback Mechanisms**: Multiple layers of topic detection
 - **Improved Clustering**: Better topic preservation during data augmentation
 - **Real-time Accuracy**: Values now correctly display 60-80% range
 
-### ✅ **UI/UX Improvements**  
+### **UI/UX Improvements**  
 - **Minimalist Design**: Clean white background, black text
 - **Professional Metrics**: Real-time clustering and inference statistics
 - **Responsive Layout**: Optimized for all screen sizes
 - **Enhanced Visualization**: Better charts and progress indicators
 
-## 📈 Performance Benchmarks
+## Performance Benchmarks
 
 ### Typical Results
 - **Generation**: 3-5 QA pairs/second
@@ -192,7 +192,7 @@ POST /api/inference
 - **Silhouette Score**: 0.3-0.6 (excellent >0.5)
 - **Model Inference**: 1-3 seconds per question
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create feature branch: `git checkout -b feature/amazing-feature`
@@ -200,11 +200,11 @@ POST /api/inference
 4. Push to branch: `git push origin feature/amazing-feature`
 5. Open Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📚 Citation
+## Citation
 
 Based on the paper [***Self-Prompting Large Language Models for Zero-Shot Open-Domain QA***](https://arxiv.org/abs/2212.08635) (NAACL 2024).
 
@@ -217,7 +217,7 @@ Based on the paper [***Self-Prompting Large Language Models for Zero-Shot Open-D
 }
 ```
 
-## 📞 Support
+## Support
 
 - **Issues**: Open GitHub issues for bugs or feature requests
 - **Documentation**: Check the `/docs` folder for detailed guides
@@ -225,4 +225,4 @@ Based on the paper [***Self-Prompting Large Language Models for Zero-Shot Open-D
 
 ---
 
-⭐ **Star this repo if you find it helpful!** ⭐
+**Star this repo if you find it helpful!**
