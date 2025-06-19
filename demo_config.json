@@ -1,0 +1,21 @@
+{
+  "demo_topics": [
+    "artificial intelligence",
+    "climate change",
+    "space exploration",
+    "renewable energy",
+    "quantum computing"
+  ],
+  "default_clusters": [
+    2,
+    3,
+    4,
+    5
+  ],
+  "max_examples_per_cluster": 2,
+  "server_config": {
+    "host": "127.0.0.1",
+    "port": 5000,
+    "debug": true
+  }
+}
