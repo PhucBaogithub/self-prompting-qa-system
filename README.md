@@ -45,7 +45,7 @@ This project implements a comprehensive **Self-Prompting Question Answering Syst
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/your-username/self-prompting-qa-system.git
+git clone https://github.com/PhucBaogithub/self-prompting-qa-system.git
 cd self-prompting-qa-system
 ```
 
