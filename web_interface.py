@@ -519,7 +519,7 @@ HTML_TEMPLATE = """
                             DistilBERT Only
                         </button>
                                         <button class="btn btn-secondary" onclick="runInference('roberta')" disabled id="roberta-btn">
-                    RoBERTa-Large Only
+                                                DeBERTa-v3-Large Only
                 </button>
                         <button class="btn btn-primary" onclick="runInference('all')" disabled id="all-btn">
                             Compare All Models
@@ -906,7 +906,7 @@ HTML_TEMPLATE = """
             
             if (mode === 'all' || mode === 'roberta') {
                 if (results.roberta) {
-                    const modelDiv = createModelResult('RoBERTa-Large', results.roberta, referenceComparison.model_comparisons?.roberta);
+                    const modelDiv = createModelResult('DeBERTa-v3-Large', results.roberta, referenceComparison.model_comparisons?.roberta);
                     comparisonContainer.appendChild(modelDiv);
                 }
             }

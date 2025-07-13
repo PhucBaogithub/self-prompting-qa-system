@@ -795,7 +795,7 @@ Answer:"""
             logger.error(f"DistilBERT inference error: {e}")
             results['distilbert'] = {'error': str(e)}
         
-        # Model 3: RoBERTa-Large QA (Advanced model with better performance)
+                    # Model 3: DeBERTa-v3-Large QA (Advanced model with better performance)
         try:
             roberta_start = time.time()
             
@@ -817,10 +817,10 @@ Answer:"""
                     roberta_answer = first_result.get('answer', '')
                     confidence = first_result.get('score', 0.0)
                 else:
-                    roberta_answer = "Unable to process RoBERTa-Large response format"
+                    roberta_answer = "Unable to process DeBERTa-v3-Large response format"
                     confidence = 0.0
             else:
-                roberta_answer = "No context provided for RoBERTa-Large QA model"
+                roberta_answer = "No context provided for DeBERTa-v3-Large QA model"
                 confidence = 0.0
             
             roberta_time = time.time() - roberta_start
@@ -834,7 +834,7 @@ Answer:"""
             }
             
         except Exception as e:
-            logger.error(f"RoBERTa-Large inference error: {e}")
+            logger.error(f"DeBERTa-v3-Large inference error: {e}")
             results['roberta'] = {'error': str(e)}
         
         total_time = time.time() - start_time
