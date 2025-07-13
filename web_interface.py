@@ -1011,8 +1011,6 @@ HTML_TEMPLATE = """
                 content += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0.8rem;">';
                 
                 modelNames.forEach(modelName => {
-                    // Use results data first, then fallback to enhancedMetrics
-                    const resultData = results[modelName] || {};
                     const metrics = enhancedMetrics[modelName] || {};
                     
                     // Map model names to display names
@@ -1025,12 +1023,12 @@ HTML_TEMPLATE = """
                         displayName = 'DISTILBERT-QA';
                     }
                     
-                    // Use results data for current inference, fallback to enhanced metrics
-                    const accuracy = (resultData.accuracy || metrics.accuracy || 0);
-                    const precision = (resultData.precision || metrics.precision || 0);
-                    const recall = (resultData.recall || metrics.recall || 0);
-                    const f1_score = (resultData.f1_score || metrics.f1_score || 0);
-                    const quality_rating = (resultData.quality_rating || metrics.quality_rating || 'N/A');
+                    // Use enhanced metrics data
+                    const accuracy = (metrics.accuracy || 0);
+                    const precision = (metrics.precision || 0);
+                    const recall = (metrics.recall || 0);
+                    const f1_score = (metrics.f1_score || 0);
+                    const quality_rating = (metrics.quality_rating || 'N/A');
                     
                     // Determine model performance color
                     let borderColor = '#6c757d';

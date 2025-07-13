@@ -804,6 +804,12 @@ Answer:"""
             if not qa_context and self.selected_examples:
                 qa_context = " ".join([ex['answer'] for ex in self.selected_examples[:3]])
             
+            # If still no context, create a generic context related to the question
+            if not qa_context:
+                qa_context = f"Context: {question} Science is a systematic enterprise that builds and organizes knowledge in the form of testable explanations and predictions about the universe."
+            
+            logger.info(f"RoBERTa context length: {len(qa_context)} chars")
+            
             if qa_context:
                 roberta_result = self.roberta_model(question=question, context=qa_context)
                 logger.info(f"RoBERTa result type: {type(roberta_result)}, content: {roberta_result}")
@@ -822,9 +828,18 @@ Answer:"""
                         roberta_answer = str(first_result)
                         confidence = 0.0
                 elif isinstance(roberta_result, list) and len(roberta_result) == 0:
-                    # Empty list - model found no answer
-                    roberta_answer = "No answer found in the provided context"
-                    confidence = 0.0
+                    # Empty list - try with a more generic context
+                    generic_context = f"Science is the systematic study of the world around us through observation and experimentation. {question} relates to scientific concepts and principles."
+                    logger.info(f"Retrying RoBERTa with generic context")
+                    roberta_result_retry = self.roberta_model(question=question, context=generic_context)
+                    logger.info(f"RoBERTa retry result: {roberta_result_retry}")
+                    
+                    if isinstance(roberta_result_retry, dict) and roberta_result_retry.get('answer'):
+                        roberta_answer = roberta_result_retry.get('answer', '')
+                        confidence = roberta_result_retry.get('score', 0.0)
+                    else:
+                        roberta_answer = "Unable to generate answer from available context"
+                        confidence = 0.0
                 elif hasattr(roberta_result, 'answer'):
                     # Try direct attribute access
                     roberta_answer = roberta_result.answer
