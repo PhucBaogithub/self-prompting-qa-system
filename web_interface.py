@@ -442,6 +442,10 @@ HTML_TEMPLATE = """
                 
                 <div class="metrics-container" id="clustering-metrics" style="display: none;">
                     <div class="metric-card">
+                        <div class="metric-value" id="clustering-algorithm">K-Means</div>
+                        <div class="metric-label">Clustering Algorithm</div>
+                    </div>
+                    <div class="metric-card">
                         <div class="metric-value" id="best-clusters">0</div>
                         <div class="metric-label">Best K Clusters</div>
                     </div>
@@ -494,7 +498,7 @@ HTML_TEMPLATE = """
             <!-- Phase 4: Inference -->
             <div class="phase-card">
                 <div class="phase-title">
-                    Phase 4: Inference
+                    Bonus: Auto Question Generation
                 </div>
                 
                 <div class="form-group">
@@ -511,15 +515,18 @@ HTML_TEMPLATE = """
                 
                 <div class="form-group">
                     <label class="form-label">Model Comparison:</label>
-                    <div style="display: flex; gap: 1rem;">
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                         <button class="btn btn-secondary" onclick="runInference('flan_t5')" disabled id="flan-btn">
                             Flan-T5 Only
                         </button>
                         <button class="btn btn-secondary" onclick="runInference('distilbert')" disabled id="distil-btn">
                             DistilBERT Only
                         </button>
-                        <button class="btn btn-primary" onclick="runInference('both')" disabled id="both-btn">
-                            Compare Both
+                        <button class="btn btn-secondary" onclick="runInference('roberta')" disabled id="roberta-btn">
+                            RoBERTa Only
+                        </button>
+                        <button class="btn btn-primary" onclick="runInference('all')" disabled id="all-btn">
+                            Compare All Models
                         </button>
                     </div>
                 </div>
@@ -564,7 +571,7 @@ HTML_TEMPLATE = """
             <!-- Bonus: Auto Question Generation -->
             <div class="phase-card">
                 <div class="phase-title">
-                    Bonus: Auto Question Generation
+                    Phase 4: Inference
                 </div>
                 
                 <div class="form-group">
@@ -609,6 +616,19 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
+        <!-- Model Performance Visualization -->
+        <div id="visualization-section" class="result-container" style="display: none;">
+            <h3>Model Performance Visualization</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <canvas id="performance-chart" width="400" height="300"></canvas>
+                </div>
+                <div>
+                    <canvas id="metrics-comparison-chart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
         <!-- Logs Section -->
         <div class="result-container">
             <h3>System Logs</h3>
@@ -618,12 +638,17 @@ HTML_TEMPLATE = """
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let pipelineState = {
             generated: false,
             clustered: false,
             selected: false
         };
+
+        // Chart instances
+        let performanceChart = null;
+        let metricsComparisonChart = null;
 
         function log(message) {
             const logContainer = document.getElementById('log-container');
@@ -637,7 +662,7 @@ HTML_TEMPLATE = """
             document.getElementById('selection-btn').disabled = !pipelineState.clustered;
             document.getElementById('generate-questions-btn').disabled = !pipelineState.clustered;
             
-            const inferenceButtons = ['flan-btn', 'distil-btn', 'both-btn'];
+            const inferenceButtons = ['flan-btn', 'distil-btn', 'roberta-btn', 'all-btn'];
             inferenceButtons.forEach(id => {
                 document.getElementById(id).disabled = !pipelineState.selected;
             });
@@ -700,7 +725,8 @@ HTML_TEMPLATE = """
                     pipelineState.clustered = true;
                     updateUI();
                     
-                    // Update metrics - Essential 3 metrics only
+                    // Update metrics - Essential 4 metrics including algorithm name
+                    document.getElementById('clustering-algorithm').textContent = result.clustered_data.best_algorithm ? result.clustered_data.best_algorithm.replace('_', ' ').toUpperCase() : 'K-MEANS';
                     document.getElementById('best-clusters').textContent = result.metrics.best_num_clusters || result.metrics.num_clusters || '0';
                     document.getElementById('silhouette-score').textContent = result.metrics.best_silhouette_score ? result.metrics.best_silhouette_score.toFixed(3) : '0.000';
                     document.getElementById('topic-coherence').textContent = result.metrics.topic_coherence ? (result.metrics.topic_coherence * 100).toFixed(1) + '%' : '0%';
@@ -806,6 +832,9 @@ HTML_TEMPLATE = """
                     // Show results
                     displayResults(result.results, mode, result.comparison_metrics, result.reference_comparison);
                     
+                    // Create visualization
+                    createModelVisualization(result.results);
+                    
                     let logMessage = `Inference completed in ${result.metrics.total_inference_time.toFixed(2)}s`;
                     if (result.comparison_metrics && !result.comparison_metrics.error) {
                         const rec = result.comparison_metrics.recommendations;
@@ -846,16 +875,23 @@ HTML_TEMPLATE = """
                 comparisonContainer.appendChild(refComparisonDiv);
             }
             
-            if (mode === 'both' || mode === 'flan_t5') {
+            if (mode === 'all' || mode === 'flan_t5') {
                 if (results.flan_t5) {
                     const modelDiv = createModelResult('Flan-T5-Small', results.flan_t5, referenceComparison.model_comparisons?.flan_t5);
                     comparisonContainer.appendChild(modelDiv);
                 }
             }
             
-            if (mode === 'both' || mode === 'distilbert') {
+            if (mode === 'all' || mode === 'distilbert') {
                 if (results.distilbert) {
                     const modelDiv = createModelResult('DistilBERT', results.distilbert, referenceComparison.model_comparisons?.distilbert);
+                    comparisonContainer.appendChild(modelDiv);
+                }
+            }
+            
+            if (mode === 'all' || mode === 'roberta') {
+                if (results.roberta) {
+                    const modelDiv = createModelResult('RoBERTa', results.roberta, referenceComparison.model_comparisons?.roberta);
                     comparisonContainer.appendChild(modelDiv);
                 }
             }
@@ -977,6 +1013,155 @@ HTML_TEMPLATE = """
             
             div.innerHTML = content;
             return div;
+        }
+
+        function createModelVisualization(results) {
+            const visualizationSection = document.getElementById('visualization-section');
+            
+            // Extract model data for visualization
+            const modelData = [];
+            const modelNames = [];
+            const accuracy = [];
+            const precision = [];
+            const recall = [];
+            const f1Score = [];
+            const inferenceTime = [];
+            
+            Object.entries(results).forEach(([modelName, result]) => {
+                if (result.answer && !result.error) {
+                    modelNames.push(modelName.replace('_', '-').toUpperCase());
+                    accuracy.push((result.accuracy || 0) * 100);
+                    precision.push((result.precision || 0) * 100);
+                    recall.push((result.recall || 0) * 100);
+                    f1Score.push((result.f1_score || 0) * 100);
+                    inferenceTime.push(result.inference_time || 0);
+                }
+            });
+            
+            if (modelNames.length === 0) {
+                visualizationSection.style.display = 'none';
+                return;
+            }
+            
+            // Create performance metrics chart
+            createPerformanceChart(modelNames, accuracy, precision, recall, f1Score);
+            
+            // Create inference time comparison chart
+            createInferenceTimeChart(modelNames, inferenceTime);
+            
+            visualizationSection.style.display = 'block';
+        }
+
+        function createPerformanceChart(modelNames, accuracy, precision, recall, f1Score) {
+            const ctx = document.getElementById('performance-chart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            performanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: modelNames,
+                    datasets: [
+                        {
+                            label: 'Accuracy',
+                            data: accuracy,
+                            backgroundColor: 'rgba(40, 167, 69, 0.6)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Precision',
+                            data: precision,
+                            backgroundColor: 'rgba(255, 193, 7, 0.6)',
+                            borderColor: 'rgba(255, 193, 7, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Recall',
+                            data: recall,
+                            backgroundColor: 'rgba(220, 53, 69, 0.6)',
+                            borderColor: 'rgba(220, 53, 69, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'F1-Score',
+                            data: f1Score,
+                            backgroundColor: 'rgba(111, 66, 193, 0.6)',
+                            borderColor: 'rgba(111, 66, 193, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Model Performance Metrics'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createInferenceTimeChart(modelNames, inferenceTime) {
+            const ctx = document.getElementById('metrics-comparison-chart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (metricsComparisonChart) {
+                metricsComparisonChart.destroy();
+            }
+            
+            // Create color array for each model
+            const colors = [
+                'rgba(54, 162, 235, 0.6)',
+                'rgba(255, 99, 132, 0.6)',
+                'rgba(75, 192, 192, 0.6)'
+            ];
+            
+            metricsComparisonChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: modelNames.map((name, index) => name + ' (' + inferenceTime[index].toFixed(3) + 's)'),
+                    datasets: [{
+                        data: inferenceTime,
+                        backgroundColor: colors.slice(0, modelNames.length),
+                        borderColor: colors.slice(0, modelNames.length).map(color => color.replace('0.6', '1')),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Inference Time Comparison'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
         }
 
         async function generateQuestionsFromClusters() {
@@ -1563,6 +1748,28 @@ HTML_TEMPLATE = """
                     </div>`;
                 }
                 
+                // Add precision, recall, f1-score metrics
+                if (result.precision !== undefined) {
+                    content += `<div class="metric-card" style="border: 2px solid #ffc107;">
+                        <div class="metric-value">${(result.precision * 100).toFixed(1)}%</div>
+                        <div class="metric-label">Precision</div>
+                    </div>`;
+                }
+                
+                if (result.recall !== undefined) {
+                    content += `<div class="metric-card" style="border: 2px solid #dc3545;">
+                        <div class="metric-value">${(result.recall * 100).toFixed(1)}%</div>
+                        <div class="metric-label">Recall</div>
+                    </div>`;
+                }
+                
+                if (result.f1_score !== undefined) {
+                    content += `<div class="metric-card" style="border: 2px solid #6f42c1;">
+                        <div class="metric-value">${(result.f1_score * 100).toFixed(1)}%</div>
+                        <div class="metric-label">F1-Score</div>
+                    </div>`;
+                }
+                
                 // Add reference comparison metrics if available
                 if (referenceMetrics && referenceMetrics.overall_score !== undefined) {
                     content += `<div class="metric-card" style="border: 2px solid #8b5cf6;">
@@ -1783,6 +1990,12 @@ def api_inference():
                 
                 enhanced_model_metrics[model_name] = model_metrics
                 
+                # Calculate precision, recall, f1-score
+                prf_metrics = metrics_calc.calculate_precision_recall_f1(
+                    result['answer'], 
+                    reference_answer if reference_answer else result['answer']
+                )
+                
                 # Add enhanced metrics to the result
                 result.update({
                     'accuracy': model_metrics.get('accuracy', 0.0),
@@ -1793,7 +2006,10 @@ def api_inference():
                     'informativeness': model_metrics.get('informativeness', 0.0),
                     'confidence_calibration': model_metrics.get('confidence_calibration', 0.0),
                     'performance_category': model_metrics.get('performance_category', 'Standard'),
-                    'words_per_second': model_metrics.get('words_per_second', 0.0)
+                    'words_per_second': model_metrics.get('words_per_second', 0.0),
+                    'precision': prf_metrics.get('precision', 0.0),
+                    'recall': prf_metrics.get('recall', 0.0),
+                    'f1_score': prf_metrics.get('f1_score', 0.0)
                 })
         
         # Calculate inference quality metrics (original method for compatibility)
@@ -1842,6 +2058,11 @@ def api_inference():
             results = {k: v for k, v in results.items() if k == 'flan_t5'}
         elif mode == 'distilbert':
             results = {k: v for k, v in results.items() if k == 'distilbert'}
+        elif mode == 'roberta':
+            results = {k: v for k, v in results.items() if k == 'roberta'}
+        elif mode == 'all':
+            # Keep all results as they are
+            pass
         
         return jsonify({
             'success': True,

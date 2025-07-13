@@ -48,6 +48,7 @@ class SelfPromptingPipeline:
         self.sentence_model = None
         self.generation_model = None
         self.qa_model = None
+        self.roberta_model = None
         self.tokenizer = None
         self.qa_tokenizer = None
         
@@ -67,7 +68,7 @@ class SelfPromptingPipeline:
         logger.info(f"Initialized Self-Prompting Pipeline on device: {device}")
     
     def load_models(self):
-        """Load both models for comparison on MacBook Pro M1"""
+        """Load all three models for comparison on MacBook Pro M1"""
         try:
             # Model 1: Flan-T5-Small (Generation and QA)
             logger.info("Loading Flan-T5-Small model...")
@@ -79,6 +80,14 @@ class SelfPromptingPipeline:
             self.qa_model = pipeline(
                 "question-answering",
                 model="distilbert-base-cased-distilled-squad",
+                device=-1  # CPU for M1 compatibility
+            )
+            
+            # Model 3: RoBERTa for QA (Modern, higher performance)
+            logger.info("Loading RoBERTa QA model...")
+            self.roberta_model = pipeline(
+                "question-answering",
+                model="deepset/roberta-base-squad2",
                 device=-1  # CPU for M1 compatibility
             )
             
@@ -786,6 +795,37 @@ Answer:"""
             logger.error(f"DistilBERT inference error: {e}")
             results['distilbert'] = {'error': str(e)}
         
+        # Model 3: RoBERTa QA (Modern, higher performance)
+        try:
+            roberta_start = time.time()
+            
+            # Use context or selected examples as context
+            qa_context = context
+            if not qa_context and self.selected_examples:
+                qa_context = " ".join([ex['answer'] for ex in self.selected_examples[:3]])
+            
+            if qa_context:
+                roberta_result = self.roberta_model(question=question, context=qa_context)
+                roberta_answer = roberta_result['answer']
+                confidence = roberta_result['score']
+            else:
+                roberta_answer = "No context provided for RoBERTa QA model"
+                confidence = 0.0
+            
+            roberta_time = time.time() - roberta_start
+            
+            results['roberta'] = {
+                'answer': roberta_answer,
+                'confidence': confidence,
+                'inference_time': roberta_time,
+                'model_name': 'roberta-base-squad2',
+                'context_used': len(qa_context.split()) if qa_context else 0
+            }
+            
+        except Exception as e:
+            logger.error(f"RoBERTa inference error: {e}")
+            results['roberta'] = {'error': str(e)}
+        
         total_time = time.time() - start_time
         
         # Update metrics
@@ -797,7 +837,7 @@ Answer:"""
             'timestamp': time.time()
         }
         
-        logger.info(f"Inference completed in {total_time:.2f}s for both models")
+        logger.info(f"Inference completed in {total_time:.2f}s for all models")
         return results
     
     # ============= EVALUATION METHODS =============

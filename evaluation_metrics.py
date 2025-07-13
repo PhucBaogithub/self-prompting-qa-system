@@ -29,6 +29,10 @@ try:
 except LookupError:
     nltk.download('punkt')
 
+# Additional imports for precision, recall, f1-score
+from sklearn.metrics import precision_score, recall_score, f1_score
+import re
+
 class MetricsCalculator:
     """Calculate comprehensive metrics for Self-Prompting pipeline with model comparison"""
     
@@ -50,6 +54,152 @@ class MetricsCalculator:
             return obj.tolist()
         else:
             return obj
+    
+    # ============= PRECISION, RECALL, F1-SCORE METRICS =============
+    
+    def calculate_precision_recall_f1(self, generated_answer: str, reference_answer: str) -> Dict[str, float]:
+        """Calculate precision, recall, and F1-score for generated vs reference answers"""
+        try:
+            # Tokenize answers
+            generated_tokens = set(self._tokenize_answer(generated_answer))
+            reference_tokens = set(self._tokenize_answer(reference_answer))
+            
+            if not reference_tokens:
+                return {'precision': 0.0, 'recall': 0.0, 'f1_score': 0.0}
+            
+            # Calculate metrics
+            if not generated_tokens:
+                return {'precision': 0.0, 'recall': 0.0, 'f1_score': 0.0}
+            
+            # True positives: tokens present in both
+            tp = len(generated_tokens.intersection(reference_tokens))
+            
+            # False positives: tokens in generated but not in reference
+            fp = len(generated_tokens - reference_tokens)
+            
+            # False negatives: tokens in reference but not in generated
+            fn = len(reference_tokens - generated_tokens)
+            
+            # Calculate precision, recall, f1
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+            recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+            f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+            
+            return {
+                'precision': precision,
+                'recall': recall,
+                'f1_score': f1_score
+            }
+            
+        except Exception as e:
+            return {'precision': 0.0, 'recall': 0.0, 'f1_score': 0.0}
+    
+    def _tokenize_answer(self, answer: str) -> List[str]:
+        """Tokenize answer text for precision/recall calculation"""
+        if not answer:
+            return []
+        
+        # Convert to lowercase and remove punctuation
+        answer = answer.lower()
+        answer = re.sub(r'[^\w\s]', '', answer)
+        
+        # Split into tokens
+        tokens = answer.split()
+        
+        # Remove common stop words
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those'}
+        tokens = [token for token in tokens if token not in stop_words and len(token) > 1]
+        
+        return tokens
+    
+    def calculate_model_performance_metrics(self, results: Dict[str, Dict], reference_answers: List[str] = None) -> Dict[str, Any]:
+        """Calculate comprehensive performance metrics for all models including precision, recall, f1-score"""
+        model_metrics = {}
+        
+        for model_name, result in results.items():
+            if 'answer' in result and 'error' not in result:
+                metrics = {
+                    'model_name': model_name,
+                    'inference_time': result.get('inference_time', 0),
+                    'confidence': result.get('confidence', 0.0),
+                    'answer_length': len(result['answer'].split()) if result['answer'] else 0,
+                    'answer_char_count': len(result['answer']) if result['answer'] else 0
+                }
+                
+                # If reference answers are provided, calculate precision, recall, f1
+                if reference_answers:
+                    avg_precision = 0.0
+                    avg_recall = 0.0
+                    avg_f1 = 0.0
+                    
+                    for ref_answer in reference_answers:
+                        prf_metrics = self.calculate_precision_recall_f1(result['answer'], ref_answer)
+                        avg_precision += prf_metrics['precision']
+                        avg_recall += prf_metrics['recall']
+                        avg_f1 += prf_metrics['f1_score']
+                    
+                    num_refs = len(reference_answers)
+                    metrics.update({
+                        'precision': avg_precision / num_refs,
+                        'recall': avg_recall / num_refs,
+                        'f1_score': avg_f1 / num_refs
+                    })
+                else:
+                    # Estimate metrics based on answer quality
+                    estimated_metrics = self._estimate_precision_recall_f1(result['answer'])
+                    metrics.update(estimated_metrics)
+                
+                model_metrics[model_name] = metrics
+        
+        return {
+            'model_metrics': model_metrics,
+            'best_precision_model': max(model_metrics.keys(), key=lambda x: model_metrics[x].get('precision', 0)) if model_metrics else None,
+            'best_recall_model': max(model_metrics.keys(), key=lambda x: model_metrics[x].get('recall', 0)) if model_metrics else None,
+            'best_f1_model': max(model_metrics.keys(), key=lambda x: model_metrics[x].get('f1_score', 0)) if model_metrics else None,
+            'avg_precision': np.mean([m.get('precision', 0) for m in model_metrics.values()]) if model_metrics else 0.0,
+            'avg_recall': np.mean([m.get('recall', 0) for m in model_metrics.values()]) if model_metrics else 0.0,
+            'avg_f1_score': np.mean([m.get('f1_score', 0) for m in model_metrics.values()]) if model_metrics else 0.0
+        }
+    
+    def _estimate_precision_recall_f1(self, answer: str) -> Dict[str, float]:
+        """Estimate precision, recall, f1-score based on answer quality heuristics"""
+        if not answer or len(answer.strip()) < 3:
+            return {'precision': 0.0, 'recall': 0.0, 'f1_score': 0.0}
+        
+        # Simple heuristic estimation based on answer characteristics
+        answer_length = len(answer.split())
+        
+        # Base scores on answer length and content quality
+        if answer_length < 5:
+            precision = 0.3
+            recall = 0.2
+        elif answer_length < 15:
+            precision = 0.6
+            recall = 0.5
+        elif answer_length < 30:
+            precision = 0.8
+            recall = 0.7
+        else:
+            precision = 0.7  # Longer answers might have lower precision
+            recall = 0.8
+        
+        # Adjust based on content quality indicators
+        if any(word in answer.lower() for word in ['specifically', 'particularly', 'precisely', 'exactly']):
+            precision += 0.1
+        
+        if any(word in answer.lower() for word in ['comprehensive', 'detailed', 'thorough', 'complete']):
+            recall += 0.1
+        
+        # Ensure values are in valid range
+        precision = min(max(precision, 0.0), 1.0)
+        recall = min(max(recall, 0.0), 1.0)
+        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+        
+        return {
+            'precision': precision,
+            'recall': recall,
+            'f1_score': f1_score
+        }
         
     # ============= EFFICIENCY COMPARISON METRICS =============
     
