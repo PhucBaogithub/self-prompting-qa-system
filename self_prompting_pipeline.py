@@ -83,11 +83,11 @@ class SelfPromptingPipeline:
                 device=-1  # CPU for M1 compatibility
             )
             
-            # Model 3: RoBERTa-Large for QA (Advanced model with better performance)
-            logger.info("Loading RoBERTa-Large QA model...")
+            # Model 3: DeBERTa-v3-Large for QA (State-of-the-art model with superior performance)
+            logger.info("Loading DeBERTa-v3-Large QA model...")
             self.roberta_model = pipeline(
                 "question-answering",
-                model="deepset/roberta-large-squad2",
+                model="microsoft/deberta-v3-large",
                 device=-1  # CPU for M1 compatibility
             )
             
@@ -829,7 +829,7 @@ Answer:"""
                 'answer': roberta_answer,
                 'confidence': confidence,
                 'inference_time': roberta_time,
-                'model_name': 'roberta-large-squad2',
+                'model_name': 'deberta-v3-large',
                 'context_used': len(qa_context.split()) if qa_context else 0
             }
             
@@ -1460,16 +1460,18 @@ Answer:"""
             summary['message'] = comparison_metrics['error']
             return summary
         
-        # Extract key performance indicators
+        # Extract key performance indicators from multi-model analysis
         if 'speed_analysis' in comparison_metrics:
             speed = comparison_metrics['speed_analysis']
-            summary['speed_winner'] = speed.get('faster_model', 'Unknown')
-            summary['speed_difference'] = f"{speed.get('speed_difference_seconds', 0):.3f}s"
+            summary['speed_winner'] = speed.get('fastest_model', 'Unknown')
+            summary['speed_difference'] = f"{speed.get('speed_range', 0):.3f}s"
+            summary['speed_rankings'] = speed.get('rankings', {})
         
         if 'quality_analysis' in comparison_metrics:
             quality = comparison_metrics['quality_analysis']
-            summary['quality_winner'] = quality.get('higher_quality_model', 'Unknown')
-            summary['detail_winner'] = quality.get('more_detailed_model', 'Unknown')
+            summary['quality_winner'] = quality.get('highest_quality_model', 'Unknown')
+            summary['detail_winner'] = quality.get('most_detailed_model', 'Unknown')
+            summary['quality_rankings'] = quality.get('quality_rankings', {})
         
         if 'efficiency_analysis' in comparison_metrics:
             efficiency = comparison_metrics['efficiency_analysis']

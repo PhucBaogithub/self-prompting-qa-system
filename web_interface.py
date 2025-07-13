@@ -2286,7 +2286,7 @@ def api_inference():
                 # Calculate precision, recall, f1-score
                 prf_metrics = metrics_calc.calculate_precision_recall_f1(
                     result['answer'], 
-                    reference_answer if reference_answer else result['answer']
+                    reference_answer if reference_answer else ""
                 )
                 
                 # Add enhanced metrics to the result
