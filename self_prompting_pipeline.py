@@ -83,11 +83,11 @@ class SelfPromptingPipeline:
                 device=-1  # CPU for M1 compatibility
             )
             
-            # Model 3: DeBERTa-v3-Large for QA (State-of-the-art model with superior performance)
-            logger.info("Loading DeBERTa-v3-Large QA model...")
+            # Model 3: RoBERTa-Large-Squad2 QA (State-of-the-art model with F1 88.349%)
+            logger.info("Loading RoBERTa-Large-Squad2 QA model...")
             self.roberta_model = pipeline(
                 "question-answering",
-                model="microsoft/deberta-v3-large",
+                model="deepset/roberta-large-squad2",
                 device=-1  # CPU for M1 compatibility
             )
             
@@ -817,10 +817,10 @@ Answer:"""
                     roberta_answer = first_result.get('answer', '')
                     confidence = first_result.get('score', 0.0)
                 else:
-                    roberta_answer = "Unable to process DeBERTa-v3-Large response format"
+                    roberta_answer = "Unable to process RoBERTa-Large-Squad2 response format"
                     confidence = 0.0
             else:
-                roberta_answer = "No context provided for DeBERTa-v3-Large QA model"
+                roberta_answer = "No context provided for RoBERTa-Large-Squad2 QA model"
                 confidence = 0.0
             
             roberta_time = time.time() - roberta_start
@@ -829,12 +829,12 @@ Answer:"""
                 'answer': roberta_answer,
                 'confidence': confidence,
                 'inference_time': roberta_time,
-                'model_name': 'deberta-v3-large',
+                'model_name': 'roberta-large-squad2',
                 'context_used': len(qa_context.split()) if qa_context else 0
             }
             
         except Exception as e:
-            logger.error(f"DeBERTa-v3-Large inference error: {e}")
+            logger.error(f"RoBERTa-Large-Squad2 inference error: {e}")
             results['roberta'] = {'error': str(e)}
         
         total_time = time.time() - start_time
