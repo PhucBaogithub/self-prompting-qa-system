@@ -1008,10 +1008,13 @@ HTML_TEMPLATE = """
             if (modelNames.length > 1) {
                 content += '<div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid var(--border);">';
                 content += '<div style="font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); font-size: 1.1rem; text-align: center;">Individual Model Performance</div>';
-                content += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.8rem;">';
+                content += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0.8rem;">';
                 
                 modelNames.forEach(modelName => {
-                    const metrics = enhancedMetrics[modelName];
+                    // Use results data first, then fallback to enhancedMetrics
+                    const resultData = results[modelName] || {};
+                    const metrics = enhancedMetrics[modelName] || {};
+                    
                     // Map model names to display names
                     let displayName = modelName.replace('_', '-').toUpperCase();
                     if (modelName === 'roberta') {
@@ -1022,8 +1025,14 @@ HTML_TEMPLATE = """
                         displayName = 'DISTILBERT-QA';
                     }
                     
+                    // Use results data for current inference, fallback to enhanced metrics
+                    const accuracy = (resultData.accuracy || metrics.accuracy || 0);
+                    const precision = (resultData.precision || metrics.precision || 0);
+                    const recall = (resultData.recall || metrics.recall || 0);
+                    const f1_score = (resultData.f1_score || metrics.f1_score || 0);
+                    const quality_rating = (resultData.quality_rating || metrics.quality_rating || 'N/A');
+                    
                     // Determine model performance color
-                    const accuracy = metrics.accuracy || 0;
                     let borderColor = '#6c757d';
                     if (accuracy > 0.7) borderColor = '#28a745';
                     else if (accuracy > 0.5) borderColor = '#ffc107';
@@ -1032,10 +1041,11 @@ HTML_TEMPLATE = """
                     content += `<div style="background: var(--surface); border: 2px solid ${borderColor}; padding: 0.8rem; border-radius: 8px;">
                         <div style="font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); text-align: center;">${displayName}</div>
                         <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
-                            <div>Accuracy: <strong>${formatPercentage(metrics.accuracy || 0)}</strong></div>
-                            <div>Zero-shot: <strong>${formatPercentage(metrics.zero_shot_accuracy || 0)}</strong></div>
-                            <div>F1-Score: <strong>${formatPercentage(metrics.f1_score || 0)}</strong></div>
-                            <div>Rating: <strong>${metrics.quality_rating || 'N/A'}</strong></div>
+                            <div>Accuracy: <strong>${formatPercentage(accuracy)}</strong></div>
+                            <div>Precision: <strong>${formatPercentage(precision)}</strong></div>
+                            <div>Recall: <strong>${formatPercentage(recall)}</strong></div>
+                            <div>F1-Score: <strong>${formatPercentage(f1_score)}</strong></div>
+                            <div>Rating: <strong>${quality_rating}</strong></div>
                         </div>
                     </div>`;
                 });
@@ -1125,6 +1135,7 @@ HTML_TEMPLATE = """
 
         function createModelVisualization(results) {
             const visualizationSection = document.getElementById('visualization-section');
+            console.log('🎨 createModelVisualization called with results:', results);
             
             // Extract model data for visualization
             const modelData = [];
@@ -1156,27 +1167,40 @@ HTML_TEMPLATE = """
                 }
             });
             
+            console.log('📊 Chart data prepared:', {
+                modelNames, accuracy, precision, recall, f1Score, inferenceTime
+            });
+            
             if (modelNames.length === 0) {
+                console.log('❌ No model data available for visualization');
                 visualizationSection.style.display = 'none';
                 return;
             }
             
+            console.log('🎯 Creating all 5 charts...');
+            
             // Create performance metrics horizontal bar chart
+            console.log('📈 Creating Performance Chart...');
             createPerformanceChart(modelNames, accuracy, precision, recall, f1Score);
             
             // Create model comparison bar chart
+            console.log('📊 Creating Model Comparison Chart...');
             createModelComparisonChart(modelNames, recall, f1Score);
             
             // Create performance trend line chart
+            console.log('📉 Creating Performance Trend Chart...');
             createPerformanceTrendChart(modelNames, accuracy, f1Score, precision);
             
             // Create inference time doughnut chart
+            console.log('🍩 Creating Inference Time Chart...');
             createInferenceTimeChart(modelNames, inferenceTime);
             
             // Create model performance share pie chart
+            console.log('🥧 Creating Model Performance Share Chart...');
             createModelPerformanceShareChart(modelNames, accuracy);
             
             visualizationSection.style.display = 'block';
+            console.log('✅ All charts creation completed');
         }
 
         function createPerformanceChart(modelNames, accuracy, precision, recall, f1Score) {
