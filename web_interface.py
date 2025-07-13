@@ -442,10 +442,6 @@ HTML_TEMPLATE = """
                 
                 <div class="metrics-container" id="clustering-metrics" style="display: none;">
                     <div class="metric-card">
-                        <div class="metric-value" id="clustering-algorithm">K-Means</div>
-                        <div class="metric-label">Clustering Algorithm</div>
-                    </div>
-                    <div class="metric-card">
                         <div class="metric-value" id="best-clusters">0</div>
                         <div class="metric-label">Best K Clusters</div>
                     </div>
@@ -619,24 +615,28 @@ HTML_TEMPLATE = """
         <!-- Model Performance Visualization -->
         <div id="visualization-section" class="result-container" style="display: none;">
             <h3>Model Performance Visualization</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                 <div>
                     <h4>Performance Metrics</h4>
-                    <canvas id="performance-chart" width="400" height="250"></canvas>
+                    <canvas id="performance-chart" width="300" height="180"></canvas>
                 </div>
                 <div>
                     <h4>Model Comparison</h4>
-                    <canvas id="model-comparison-chart" width="400" height="250"></canvas>
+                    <canvas id="model-comparison-chart" width="300" height="180"></canvas>
+                </div>
+                <div>
+                    <h4>Performance Trend</h4>
+                    <canvas id="performance-trend-chart" width="300" height="180"></canvas>
                 </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
                 <div>
                     <h4>Inference Time Distribution</h4>
-                    <canvas id="inference-time-chart" width="400" height="250"></canvas>
+                    <canvas id="inference-time-chart" width="350" height="200"></canvas>
                 </div>
                 <div>
-                    <h4>Accuracy Rating Distribution</h4>
-                    <canvas id="accuracy-rating-chart" width="400" height="250"></canvas>
+                    <h4>Model Performance Share</h4>
+                    <canvas id="accuracy-rating-chart" width="350" height="200"></canvas>
                 </div>
             </div>
         </div>
@@ -661,6 +661,7 @@ HTML_TEMPLATE = """
         // Chart instances
         let performanceChart = null;
         let modelComparisonChart = null;
+        let performanceTrendChart = null;
         let inferenceTimeChart = null;
         let accuracyRatingChart = null;
 
@@ -740,7 +741,7 @@ HTML_TEMPLATE = """
                     updateUI();
                     
                     // Update metrics - Essential 4 metrics including algorithm name
-                    document.getElementById('clustering-algorithm').textContent = 'K-MEANS';
+    
                     document.getElementById('best-clusters').textContent = result.metrics.best_num_clusters || result.metrics.num_clusters || '0';
                     document.getElementById('silhouette-score').textContent = result.metrics.best_silhouette_score ? result.metrics.best_silhouette_score.toFixed(3) : '0.000';
                     document.getElementById('topic-coherence').textContent = result.metrics.topic_coherence ? (result.metrics.topic_coherence * 100).toFixed(1) + '%' : '0%';
@@ -1025,6 +1026,7 @@ HTML_TEMPLATE = """
                         <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
                             <div>Accuracy: <strong>${formatPercentage(metrics.accuracy || 0)}</strong></div>
                             <div>Zero-shot: <strong>${formatPercentage(metrics.zero_shot_accuracy || 0)}</strong></div>
+                            <div>F1-Score: <strong>${formatPercentage(metrics.f1_score || 0)}</strong></div>
                             <div>Rating: <strong>${metrics.quality_rating || 'N/A'}</strong></div>
                         </div>
                     </div>`;
@@ -1147,19 +1149,14 @@ HTML_TEMPLATE = """
             // Create model comparison bar chart
             createModelComparisonChart(modelNames, recall, f1Score);
             
+            // Create performance trend line chart
+            createPerformanceTrendChart(modelNames, accuracy, f1Score, precision);
+            
             // Create inference time doughnut chart
             createInferenceTimeChart(modelNames, inferenceTime);
             
-            // Create accuracy rating pie chart
-            const accuracyRatings = modelNames.map((name, index) => {
-                const acc = accuracy[index];
-                if (acc >= 85) return 'Excellent';
-                if (acc >= 75) return 'Very Good';
-                if (acc >= 65) return 'Good';
-                if (acc >= 55) return 'Fair';
-                return 'Poor';
-            });
-            createAccuracyRatingChart(modelNames, accuracyRatings);
+            // Create model performance share pie chart
+            createModelPerformanceShareChart(modelNames, accuracy);
             
             visualizationSection.style.display = 'block';
         }
@@ -1280,6 +1277,81 @@ HTML_TEMPLATE = """
             });
         }
 
+        function createPerformanceTrendChart(modelNames, accuracy, f1Score, precision) {
+            const ctx = document.getElementById('performance-trend-chart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (performanceTrendChart) {
+                performanceTrendChart.destroy();
+            }
+            
+            performanceTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: modelNames,
+                    datasets: [
+                        {
+                            label: 'Accuracy',
+                            data: accuracy,
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'F1-Score',
+                            data: f1Score,
+                            borderColor: 'rgba(111, 66, 193, 1)',
+                            backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Precision',
+                            data: precision,
+                            borderColor: 'rgba(255, 193, 7, 1)',
+                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Performance Trends'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 6,
+                            hoverRadius: 8
+                        }
+                    }
+                }
+            });
+        }
+
         function createInferenceTimeChart(modelNames, inferenceTime) {
             const ctx = document.getElementById('inference-time-chart').getContext('2d');
             
@@ -1322,7 +1394,7 @@ HTML_TEMPLATE = """
             });
         }
 
-        function createAccuracyRatingChart(modelNames, accuracyRatings) {
+        function createModelPerformanceShareChart(modelNames, accuracy) {
             const ctx = document.getElementById('accuracy-rating-chart').getContext('2d');
             
             // Destroy existing chart if it exists
@@ -1330,40 +1402,33 @@ HTML_TEMPLATE = """
                 accuracyRatingChart.destroy();
             }
             
-            // Count rating distribution
-            const ratingCount = {};
-            const ratingColors = {
-                'Excellent': 'rgba(40, 167, 69, 0.6)',
-                'Very Good': 'rgba(108, 117, 125, 0.6)',
-                'Good': 'rgba(255, 193, 7, 0.6)',
-                'Fair': 'rgba(220, 53, 69, 0.6)',
-                'Poor': 'rgba(108, 117, 125, 0.6)'
-            };
+            // Create color array for each model
+            const colors = [
+                'rgba(40, 167, 69, 0.7)',
+                'rgba(255, 193, 7, 0.7)',
+                'rgba(220, 53, 69, 0.7)',
+                'rgba(111, 66, 193, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(75, 192, 192, 0.7)'
+            ];
             
-            // Initialize rating count
-            Object.keys(ratingColors).forEach(rating => {
-                ratingCount[rating] = 0;
+            // Calculate total performance for percentage calculation
+            const totalPerformance = accuracy.reduce((sum, acc) => sum + acc, 0);
+            
+            // Create labels with percentage
+            const labels = modelNames.map((name, index) => {
+                const percentage = totalPerformance > 0 ? ((accuracy[index] / totalPerformance) * 100).toFixed(1) : 0;
+                return `${name} (${percentage}%)`;
             });
-            
-            // Count accuracy ratings
-            accuracyRatings.forEach(rating => {
-                if (ratingCount[rating] !== undefined) {
-                    ratingCount[rating]++;
-                }
-            });
-            
-            const labels = Object.keys(ratingCount);
-            const data = Object.values(ratingCount);
-            const colors = labels.map(label => ratingColors[label]);
             
             accuracyRatingChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: labels,
                     datasets: [{
-                        data: data,
-                        backgroundColor: colors,
-                        borderColor: colors.map(color => color.replace('0.6', '1')),
+                        data: accuracy,
+                        backgroundColor: colors.slice(0, modelNames.length),
+                        borderColor: colors.slice(0, modelNames.length).map(color => color.replace('0.7', '1')),
                         borderWidth: 2
                     }]
                 },
@@ -1372,11 +1437,20 @@ HTML_TEMPLATE = """
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Accuracy Rating Distribution'
+                            text: 'Model Performance Share'
                         },
                         legend: {
                             display: true,
                             position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    return `${label}: ${value.toFixed(1)}%`;
+                                }
+                            }
                         }
                     }
                 }
