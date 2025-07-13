@@ -815,11 +815,30 @@ Answer:"""
                 elif isinstance(roberta_result, list) and len(roberta_result) > 0:
                     # Sometimes pipeline returns a list with one result
                     first_result = roberta_result[0]
-                    roberta_answer = first_result.get('answer', '')
-                    confidence = first_result.get('score', 0.0)
-                else:
-                    roberta_answer = "Unable to process RoBERTa-Large-Squad2 response format"
+                    if isinstance(first_result, dict):
+                        roberta_answer = first_result.get('answer', '')
+                        confidence = first_result.get('score', 0.0)
+                    else:
+                        roberta_answer = str(first_result)
+                        confidence = 0.0
+                elif isinstance(roberta_result, list) and len(roberta_result) == 0:
+                    # Empty list - model found no answer
+                    roberta_answer = "No answer found in the provided context"
                     confidence = 0.0
+                elif hasattr(roberta_result, 'answer'):
+                    # Try direct attribute access
+                    roberta_answer = roberta_result.answer
+                    confidence = getattr(roberta_result, 'score', 0.0)
+                elif hasattr(roberta_result, '__dict__'):
+                    # Try to access as object attributes
+                    result_dict = roberta_result.__dict__
+                    roberta_answer = result_dict.get('answer', '')
+                    confidence = result_dict.get('score', 0.0)
+                else:
+                    # Convert to string as fallback
+                    roberta_answer = str(roberta_result)
+                    confidence = 0.0
+                    logger.warning(f"Unexpected RoBERTa response format: {type(roberta_result)}")
             else:
                 roberta_answer = "No context provided for RoBERTa-Large-Squad2 QA model"
                 confidence = 0.0
