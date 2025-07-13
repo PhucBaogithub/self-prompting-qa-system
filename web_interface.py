@@ -437,7 +437,7 @@ HTML_TEMPLATE = """
                 </div>
                 
                 <button class="btn btn-primary" onclick="performClustering()" disabled id="cluster-btn">
-                    Perform Clustering
+                    Perform clustering with K-Means
                 </button>
                 
                 <div class="metrics-container" id="clustering-metrics" style="display: none;">
@@ -726,7 +726,7 @@ HTML_TEMPLATE = """
                     updateUI();
                     
                     // Update metrics - Essential 4 metrics including algorithm name
-                    document.getElementById('clustering-algorithm').textContent = result.clustered_data.best_algorithm ? result.clustered_data.best_algorithm.replace('_', ' ').toUpperCase() : 'K-MEANS';
+                    document.getElementById('clustering-algorithm').textContent = 'K-MEANS';
                     document.getElementById('best-clusters').textContent = result.metrics.best_num_clusters || result.metrics.num_clusters || '0';
                     document.getElementById('silhouette-score').textContent = result.metrics.best_silhouette_score ? result.metrics.best_silhouette_score.toFixed(3) : '0.000';
                     document.getElementById('topic-coherence').textContent = result.metrics.topic_coherence ? (result.metrics.topic_coherence * 100).toFixed(1) + '%' : '0%';
@@ -981,6 +981,14 @@ HTML_TEMPLATE = """
             
             content += '</div>';
             
+            // Add chart for advanced metrics visualization
+            content += '<div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid var(--border);">';
+            content += '<div style="font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); font-size: 1.1rem; text-align: center;">Model Performance Comparison</div>';
+            content += '<div style="display: flex; justify-content: center; margin-bottom: 1rem;">';
+            content += '<canvas id="advanced-metrics-chart" width="600" height="400"></canvas>';
+            content += '</div>';
+            content += '</div>';
+            
             // Model breakdown if multiple models
             if (modelNames.length > 1) {
                 content += '<div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid var(--border);">';
@@ -1012,7 +1020,83 @@ HTML_TEMPLATE = """
             }
             
             div.innerHTML = content;
+            
+            // Create advanced metrics chart after DOM is updated
+            setTimeout(() => {
+                createAdvancedMetricsChart(enhancedMetrics);
+            }, 100);
+            
             return div;
+        }
+
+        function createAdvancedMetricsChart(enhancedMetrics) {
+            const canvas = document.getElementById('advanced-metrics-chart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Extract data for chart
+            const modelNames = [];
+            const accuracyData = [];
+            const zeroShotData = [];
+            
+            Object.entries(enhancedMetrics).forEach(([modelName, metrics]) => {
+                modelNames.push(modelName.replace('_', '-').toUpperCase());
+                accuracyData.push((metrics.accuracy || 0) * 100);
+                zeroShotData.push((metrics.zero_shot_accuracy || 0) * 100);
+            });
+            
+            // Create chart
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: modelNames,
+                    datasets: [
+                        {
+                            label: 'Accuracy',
+                            data: accuracyData,
+                            backgroundColor: 'rgba(40, 167, 69, 0.6)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Zero-shot Accuracy',
+                            data: zeroShotData,
+                            backgroundColor: 'rgba(23, 162, 184, 0.6)',
+                            borderColor: 'rgba(23, 162, 184, 1)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Model Accuracy Comparison',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         function createModelVisualization(results) {

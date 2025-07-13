@@ -68,7 +68,7 @@ class SelfPromptingPipeline:
         logger.info(f"Initialized Self-Prompting Pipeline on device: {device}")
     
     def load_models(self):
-        """Load all three models for comparison on MacBook Pro M1"""
+        """Load models for comparison on MacBook Pro M1"""
         try:
             # Model 1: Flan-T5-Small (Generation and QA)
             logger.info("Loading Flan-T5-Small model...")
@@ -83,7 +83,7 @@ class SelfPromptingPipeline:
                 device=-1  # CPU for M1 compatibility
             )
             
-            # Model 3: RoBERTa for QA (Modern, higher performance)
+            # Model 3: RoBERTa for QA (Using safer model)
             logger.info("Loading RoBERTa QA model...")
             self.roberta_model = pipeline(
                 "question-answering",
@@ -795,7 +795,7 @@ Answer:"""
             logger.error(f"DistilBERT inference error: {e}")
             results['distilbert'] = {'error': str(e)}
         
-        # Model 3: RoBERTa QA (Modern, higher performance)
+        # Model 3: RoBERTa QA (Safer model)
         try:
             roberta_start = time.time()
             
