@@ -662,8 +662,6 @@ HTML_TEMPLATE = """
         let performanceChart = null;
         let modelComparisonChart = null;
         let performanceTrendChart = null;
-        let inferenceTimeChart = null;
-        let accuracyRatingChart = null;
 
         function log(message) {
             const logContainer = document.getElementById('log-container');
@@ -980,8 +978,7 @@ HTML_TEMPLATE = """
                     'recall': 0.66,
                     'f1_score': 0.74,
                     'overall_quality_score': 0.70,
-                    'quality_rating': 'Very Good',
-                    'inference_time': 0.45
+                    'quality_rating': 'Very Good'
                 },
                 'distilbert': {
                     'accuracy': 0.60,
@@ -990,8 +987,7 @@ HTML_TEMPLATE = """
                     'recall': 0.46,
                     'f1_score': 0.48,
                     'overall_quality_score': 0.52,
-                    'quality_rating': 'Fair',
-                    'inference_time': 0.25
+                    'quality_rating': 'Fair'
                 },
                 'roberta': {
                     'accuracy': 0.78,
@@ -1000,8 +996,7 @@ HTML_TEMPLATE = """
                     'recall': 0.79,
                     'f1_score': 0.81,
                     'overall_quality_score': 0.78,
-                    'quality_rating': 'Very Good',
-                    'inference_time': 0.52
+                    'quality_rating': 'Very Good'
                 }
             };
             
@@ -1058,10 +1053,6 @@ HTML_TEMPLATE = """
             content += '<div><h4>Performance Metrics</h4><canvas id="performance-chart-enhanced" width="300" height="180"></canvas></div>';
             content += '<div><h4>Model Comparison</h4><canvas id="model-comparison-chart-enhanced" width="300" height="180"></canvas></div>';
             content += '<div><h4>Performance Trend</h4><canvas id="performance-trend-chart-enhanced" width="300" height="180"></canvas></div>';
-            content += '</div>';
-            content += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">';
-            content += '<div style="max-width: 300px; margin: 0 auto;"><h4>Inference Time Distribution</h4><canvas id="inference-time-chart-enhanced" width="250" height="150"></canvas></div>';
-            content += '<div style="max-width: 300px; margin: 0 auto;"><h4>Model Performance Share</h4><canvas id="accuracy-rating-chart-enhanced" width="250" height="150"></canvas></div>';
             content += '</div>';
             content += '</div>';
             
@@ -1137,7 +1128,6 @@ HTML_TEMPLATE = """
             const precision = [];
             const recall = [];
             const f1Score = [];
-            const inferenceTime = [];
             
             Object.entries(enhancedMetrics).forEach(([modelName, metrics]) => {
                 // Map model names to display names
@@ -1155,11 +1145,10 @@ HTML_TEMPLATE = """
                 precision.push((metrics.precision || 0) * 100);
                 recall.push((metrics.recall || 0) * 100);
                 f1Score.push((metrics.f1_score || 0) * 100);
-                inferenceTime.push(metrics.inference_time || 0);
             });
             
             console.log('📊 Enhanced chart data:', {
-                modelNames, accuracy, precision, recall, f1Score, inferenceTime
+                modelNames, accuracy, precision, recall, f1Score
             });
             
             if (modelNames.length === 0) {
@@ -1167,14 +1156,12 @@ HTML_TEMPLATE = """
                 return;
             }
             
-            console.log('🎯 Creating all 5 enhanced charts...');
+            console.log('🎯 Creating all 3 enhanced charts...');
             
-            // Create all 5 charts with enhanced IDs
+            // Create all 3 charts with enhanced IDs
             createEnhancedPerformanceChart(modelNames, accuracy, precision, recall, f1Score);
             createEnhancedModelComparisonChart(modelNames, recall, f1Score);
             createEnhancedPerformanceTrendChart(modelNames, accuracy, f1Score, precision);
-            createEnhancedInferenceTimeChart(modelNames, inferenceTime);
-            createEnhancedModelPerformanceShareChart(modelNames, accuracy);
             
             console.log('✅ All enhanced charts creation completed');
         }
@@ -1190,7 +1177,6 @@ HTML_TEMPLATE = """
             const precision = [];
             const recall = [];
             const f1Score = [];
-            const inferenceTime = [];
             
             Object.entries(results).forEach(([modelName, result]) => {
                 if (result.answer && !result.error) {
@@ -1209,12 +1195,11 @@ HTML_TEMPLATE = """
                     precision.push((result.precision || 0) * 100);
                     recall.push((result.recall || 0) * 100);
                     f1Score.push((result.f1_score || 0) * 100);
-                    inferenceTime.push(result.inference_time || 0);
                 }
             });
             
             console.log('📊 Chart data prepared:', {
-                modelNames, accuracy, precision, recall, f1Score, inferenceTime
+                modelNames, accuracy, precision, recall, f1Score
             });
             
             if (modelNames.length === 0) {
@@ -1236,14 +1221,6 @@ HTML_TEMPLATE = """
             // Create performance trend line chart
             console.log('📉 Creating Performance Trend Chart...');
             createPerformanceTrendChart(modelNames, accuracy, f1Score, precision);
-            
-            // Create inference time doughnut chart
-            console.log('🍩 Creating Inference Time Chart...');
-            createInferenceTimeChart(modelNames, inferenceTime);
-            
-            // Create model performance share pie chart
-            console.log('🥧 Creating Model Performance Share Chart...');
-            createModelPerformanceShareChart(modelNames, accuracy);
             
             visualizationSection.style.display = 'block';
             console.log('✅ All charts creation completed');
@@ -1469,120 +1446,7 @@ HTML_TEMPLATE = """
             });
         }
 
-        function createInferenceTimeChart(modelNames, inferenceTime) {
-            const canvas = document.getElementById('inference-time-chart');
-            if (!canvas) {
-                console.error('Inference time chart canvas not found');
-                return;
-            }
-            const ctx = canvas.getContext('2d');
-            
-            // Destroy existing chart if it exists
-            if (inferenceTimeChart) {
-                inferenceTimeChart.destroy();
-            }
-            
-            // Create color array for each model
-            const colors = [
-                'rgba(54, 162, 235, 0.6)',
-                'rgba(255, 99, 132, 0.6)',
-                'rgba(75, 192, 192, 0.6)'
-            ];
-            
-            inferenceTimeChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: modelNames.map((name, index) => name + ' (' + inferenceTime[index].toFixed(3) + 's)'),
-                    datasets: [{
-                        data: inferenceTime,
-                        backgroundColor: colors.slice(0, modelNames.length),
-                        borderColor: colors.slice(0, modelNames.length).map(color => color.replace('0.6', '1')),
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Inference Time Distribution'
-                        },
-                        legend: {
-                            display: true,
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        }
 
-        function createModelPerformanceShareChart(modelNames, accuracy) {
-            const canvas = document.getElementById('accuracy-rating-chart');
-            if (!canvas) {
-                console.error('Model performance share chart canvas not found');
-                return;
-            }
-            const ctx = canvas.getContext('2d');
-            
-            // Destroy existing chart if it exists
-            if (accuracyRatingChart) {
-                accuracyRatingChart.destroy();
-            }
-            
-            // Create color array for each model
-            const colors = [
-                'rgba(40, 167, 69, 0.7)',
-                'rgba(255, 193, 7, 0.7)',
-                'rgba(220, 53, 69, 0.7)',
-                'rgba(111, 66, 193, 0.7)',
-                'rgba(54, 162, 235, 0.7)',
-                'rgba(75, 192, 192, 0.7)'
-            ];
-            
-            // Calculate total performance for percentage calculation
-            const totalPerformance = accuracy.reduce((sum, acc) => sum + acc, 0);
-            
-            // Create labels with percentage
-            const labels = modelNames.map((name, index) => {
-                const percentage = totalPerformance > 0 ? ((accuracy[index] / totalPerformance) * 100).toFixed(1) : 0;
-                return `${name} (${percentage}%)`;
-            });
-            
-            accuracyRatingChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: accuracy,
-                        backgroundColor: colors.slice(0, modelNames.length),
-                        borderColor: colors.slice(0, modelNames.length).map(color => color.replace('0.7', '1')),
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Model Performance Share'
-                        },
-                        legend: {
-                            display: true,
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed;
-                                    return `${label}: ${value.toFixed(1)}%`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
 
         function createEnhancedPerformanceChart(modelNames, accuracy, precision, recall, f1Score) {
             const canvas = document.getElementById('performance-chart-enhanced');
@@ -1786,125 +1650,7 @@ HTML_TEMPLATE = """
             });
         }
 
-        function createEnhancedInferenceTimeChart(modelNames, inferenceTime) {
-            const canvas = document.getElementById('inference-time-chart-enhanced');
-            if (!canvas) {
-                console.error('Enhanced inference time chart canvas not found');
-                return;
-            }
-            const ctx = canvas.getContext('2d');
-            
-            // Validate and clean inference time data
-            const validInferenceTime = inferenceTime.map(time => {
-                const numTime = parseFloat(time);
-                return isNaN(numTime) ? 0 : numTime;
-            });
-            
-            const colors = [
-                'rgba(54, 162, 235, 0.6)',
-                'rgba(255, 99, 132, 0.6)',
-                'rgba(75, 192, 192, 0.6)'
-            ];
-            
-            // Create labels with properly formatted time values
-            const labels = modelNames.map((name, index) => {
-                const timeValue = validInferenceTime[index] || 0;
-                return `${name} (${timeValue.toFixed(3)}s)`;
-            });
-            
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: validInferenceTime,
-                        backgroundColor: colors.slice(0, modelNames.length),
-                        borderColor: colors.slice(0, modelNames.length).map(color => color.replace('0.6', '1')),
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Inference Time Distribution'
-                        },
-                        legend: {
-                            display: true,
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        }
 
-        function createEnhancedModelPerformanceShareChart(modelNames, accuracy) {
-            const canvas = document.getElementById('accuracy-rating-chart-enhanced');
-            if (!canvas) {
-                console.error('Enhanced model performance share chart canvas not found');
-                return;
-            }
-            const ctx = canvas.getContext('2d');
-            
-            const colors = [
-                'rgba(40, 167, 69, 0.7)',
-                'rgba(255, 193, 7, 0.7)',
-                'rgba(220, 53, 69, 0.7)',
-                'rgba(111, 66, 193, 0.7)',
-                'rgba(54, 162, 235, 0.7)',
-                'rgba(75, 192, 192, 0.7)'
-            ];
-            
-            const totalPerformance = accuracy.reduce((sum, acc) => sum + acc, 0);
-            const labels = modelNames.map((name, index) => {
-                const percentage = totalPerformance > 0 ? ((accuracy[index] / totalPerformance) * 100).toFixed(1) : 0;
-                return `${name} (${percentage}%)`;
-            });
-            
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: accuracy,
-                        backgroundColor: colors.slice(0, modelNames.length),
-                        borderColor: colors.slice(0, modelNames.length).map(color => color.replace('0.7', '1')),
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Model Performance Share'
-                        },
-                        legend: {
-                            display: true,
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed;
-                                    return `${label}: ${value.toFixed(1)}%`;
-                                }
-                            }
-                        }
-                    },
-                    layout: {
-                        padding: {
-                            top: 10,
-                            bottom: 10
-                        }
-                    }
-                }
-            });
-        }
 
         async function generateQuestionsFromClusters() {
             const questionsPerCluster = document.getElementById('questions-per-cluster').value;
@@ -2126,7 +1872,6 @@ HTML_TEMPLATE = """
                     f1_score: metrics.f1_score || 0.70,
                     overall_quality_score: metrics.overall_quality_score || 0.69,
                     quality_rating: metrics.quality_rating || 'Good',
-                    inference_time: metrics.inference_time || 0.5,
                     bleu_score: metrics.bleu_score || 0.65,
                     rouge_score: metrics.rouge_score || 0.68,
                     ...metrics  // Keep original metrics if available
@@ -2287,8 +2032,7 @@ HTML_TEMPLATE = """
                                 'recall': 0.66,
                                 'f1_score': 0.74,
                                 'overall_quality_score': 0.70,
-                                'quality_rating': 'Very Good',
-                                'inference_time': 0.45
+                                'quality_rating': 'Very Good'
                             },
                             'distilbert': {
                                 'accuracy': 0.60,
@@ -2297,8 +2041,7 @@ HTML_TEMPLATE = """
                                 'recall': 0.46,
                                 'f1_score': 0.48,
                                 'overall_quality_score': 0.52,
-                                'quality_rating': 'Fair',
-                                'inference_time': 0.25
+                                'quality_rating': 'Fair'
                             },
                             'roberta': {
                                 'accuracy': 0.78,
@@ -2307,8 +2050,7 @@ HTML_TEMPLATE = """
                                 'recall': 0.79,
                                 'f1_score': 0.81,
                                 'overall_quality_score': 0.78,
-                                'quality_rating': 'Very Good',
-                                'inference_time': 0.52
+                                'quality_rating': 'Very Good'
                             }
                         };
                     }
