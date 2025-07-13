@@ -1012,7 +1012,15 @@ HTML_TEMPLATE = """
                 
                 modelNames.forEach(modelName => {
                     const metrics = enhancedMetrics[modelName];
-                    const displayName = modelName.replace('_', '-').toUpperCase();
+                    // Map model names to display names
+                    let displayName = modelName.replace('_', '-').toUpperCase();
+                    if (modelName === 'roberta') {
+                        displayName = 'ROBERTA-LARGE-SQUAD2';
+                    } else if (modelName === 'flan_t5') {
+                        displayName = 'FLAN-T5-SMALL';
+                    } else if (modelName === 'distilbert') {
+                        displayName = 'DISTILBERT-QA';
+                    }
                     
                     // Determine model performance color
                     const accuracy = metrics.accuracy || 0;
@@ -1172,7 +1180,12 @@ HTML_TEMPLATE = """
         }
 
         function createPerformanceChart(modelNames, accuracy, precision, recall, f1Score) {
-            const ctx = document.getElementById('performance-chart').getContext('2d');
+            const canvas = document.getElementById('performance-chart');
+            if (!canvas) {
+                console.error('Performance chart canvas not found');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
             
             // Destroy existing chart if it exists
             if (performanceChart) {
@@ -1246,7 +1259,12 @@ HTML_TEMPLATE = """
         }
 
         function createModelComparisonChart(modelNames, recall, f1Score) {
-            const ctx = document.getElementById('model-comparison-chart').getContext('2d');
+            const canvas = document.getElementById('model-comparison-chart');
+            if (!canvas) {
+                console.error('Model comparison chart canvas not found');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
             
             // Destroy existing chart if it exists
             if (modelComparisonChart) {
@@ -1302,7 +1320,12 @@ HTML_TEMPLATE = """
         }
 
         function createPerformanceTrendChart(modelNames, accuracy, f1Score, precision) {
-            const ctx = document.getElementById('performance-trend-chart').getContext('2d');
+            const canvas = document.getElementById('performance-trend-chart');
+            if (!canvas) {
+                console.error('Performance trend chart canvas not found');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
             
             // Destroy existing chart if it exists
             if (performanceTrendChart) {
@@ -1377,7 +1400,12 @@ HTML_TEMPLATE = """
         }
 
         function createInferenceTimeChart(modelNames, inferenceTime) {
-            const ctx = document.getElementById('inference-time-chart').getContext('2d');
+            const canvas = document.getElementById('inference-time-chart');
+            if (!canvas) {
+                console.error('Inference time chart canvas not found');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
             
             // Destroy existing chart if it exists
             if (inferenceTimeChart) {
@@ -1419,7 +1447,12 @@ HTML_TEMPLATE = """
         }
 
         function createModelPerformanceShareChart(modelNames, accuracy) {
-            const ctx = document.getElementById('accuracy-rating-chart').getContext('2d');
+            const canvas = document.getElementById('accuracy-rating-chart');
+            if (!canvas) {
+                console.error('Model performance share chart canvas not found');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
             
             // Destroy existing chart if it exists
             if (accuracyRatingChart) {
@@ -2325,13 +2358,18 @@ def api_inference():
                     is_zero_shot=True  # Our models are zero-shot
                 )
                 
-                enhanced_model_metrics[model_name] = model_metrics
-                
                 # Calculate precision, recall, f1-score
                 prf_metrics = metrics_calc.calculate_precision_recall_f1(
                     result['answer'], 
                     reference_answer if reference_answer else ""
                 )
+                
+                # Add F1-Score to model_metrics before storing
+                model_metrics['f1_score'] = prf_metrics.get('f1_score', 0.0)
+                model_metrics['precision'] = prf_metrics.get('precision', 0.0)
+                model_metrics['recall'] = prf_metrics.get('recall', 0.0)
+                
+                enhanced_model_metrics[model_name] = model_metrics
                 
                 # Add enhanced metrics to the result
                 result.update({

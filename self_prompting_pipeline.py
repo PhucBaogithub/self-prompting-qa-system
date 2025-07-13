@@ -806,6 +806,7 @@ Answer:"""
             
             if qa_context:
                 roberta_result = self.roberta_model(question=question, context=qa_context)
+                logger.info(f"RoBERTa result type: {type(roberta_result)}, content: {roberta_result}")
                 
                 # Handle different response formats
                 if isinstance(roberta_result, dict):
