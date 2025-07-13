@@ -1129,7 +1129,17 @@ HTML_TEMPLATE = """
             
             Object.entries(results).forEach(([modelName, result]) => {
                 if (result.answer && !result.error) {
-                    modelNames.push(modelName.replace('_', '-').toUpperCase());
+                    // Map model names to display names
+                    let displayName = modelName.replace('_', '-').toUpperCase();
+                    if (modelName === 'roberta') {
+                        displayName = 'ROBERTA-LARGE-SQUAD2';
+                    } else if (modelName === 'flan_t5') {
+                        displayName = 'FLAN-T5-SMALL';
+                    } else if (modelName === 'distilbert') {
+                        displayName = 'DISTILBERT-QA';
+                    }
+                    
+                    modelNames.push(displayName);
                     accuracy.push((result.accuracy || 0) * 100);
                     precision.push((result.precision || 0) * 100);
                     recall.push((result.recall || 0) * 100);
@@ -1187,6 +1197,20 @@ HTML_TEMPLATE = """
                             backgroundColor: 'rgba(255, 193, 7, 0.6)',
                             borderColor: 'rgba(255, 193, 7, 1)',
                             borderWidth: 1
+                        },
+                        {
+                            label: 'Recall',
+                            data: recall,
+                            backgroundColor: 'rgba(23, 162, 184, 0.6)',
+                            borderColor: 'rgba(23, 162, 184, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'F1-Score',
+                            data: f1Score,
+                            backgroundColor: 'rgba(111, 66, 193, 0.6)',
+                            borderColor: 'rgba(111, 66, 193, 1)',
+                            borderWidth: 1
                         }
                     ]
                 },
@@ -1196,7 +1220,7 @@ HTML_TEMPLATE = """
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Performance Metrics (Compact)'
+                            text: 'Performance Metrics (Horizontal Bar)'
                         },
                         legend: {
                             display: true,
@@ -1889,8 +1913,18 @@ HTML_TEMPLATE = """
                 content += '<div style="margin-bottom: 1.5rem;">';
                 content += '<div style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.8rem; color: var(--text-primary);">Speed Champions:</div>';
                 Object.entries(overallMetrics.speed_performance.win_percentages).forEach(([model, percentage]) => {
+                    // Map model names to display names
+                    let displayName = model.toUpperCase();
+                    if (model === 'roberta') {
+                        displayName = 'ROBERTA-LARGE-SQUAD2';
+                    } else if (model === 'flan_t5') {
+                        displayName = 'FLAN-T5-SMALL';
+                    } else if (model === 'distilbert') {
+                        displayName = 'DISTILBERT-QA';
+                    }
+                    
                     content += `<div style="margin-left: 1.5rem; font-size: 1rem; margin-bottom: 0.3rem; background: var(--surface); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border);">
-                        <span style="font-weight: 600;">${model.toUpperCase()}:</span> 
+                        <span style="font-weight: 600;">${displayName}:</span> 
                         <span style="color: var(--text-primary); font-weight: 700;">${percentage.toFixed(1)}%</span>
                     </div>`;
                 });
@@ -1901,8 +1935,18 @@ HTML_TEMPLATE = """
                 content += '<div style="margin-bottom: 1.5rem;">';
                 content += '<div style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.8rem; color: var(--text-primary);">Quality Champions:</div>';
                 Object.entries(overallMetrics.quality_performance.win_percentages).forEach(([model, percentage]) => {
+                    // Map model names to display names
+                    let displayName = model.toUpperCase();
+                    if (model === 'roberta') {
+                        displayName = 'ROBERTA-LARGE-SQUAD2';
+                    } else if (model === 'flan_t5') {
+                        displayName = 'FLAN-T5-SMALL';
+                    } else if (model === 'distilbert') {
+                        displayName = 'DISTILBERT-QA';
+                    }
+                    
                     content += `<div style="margin-left: 1.5rem; font-size: 1rem; margin-bottom: 0.3rem; background: var(--surface); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border);">
-                        <span style="font-weight: 600;">${model.toUpperCase()}:</span> 
+                        <span style="font-weight: 600;">${displayName}:</span> 
                         <span style="color: var(--text-primary); font-weight: 700;">${percentage.toFixed(1)}%</span>
                     </div>`;
                 });
