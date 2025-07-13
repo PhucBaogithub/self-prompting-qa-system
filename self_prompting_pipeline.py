@@ -83,11 +83,11 @@ class SelfPromptingPipeline:
                 device=-1  # CPU for M1 compatibility
             )
             
-            # Model 3: RoBERTa for QA (Using safer model)
-            logger.info("Loading RoBERTa QA model...")
+            # Model 3: RoBERTa-Large for QA (Advanced model with better performance)
+            logger.info("Loading RoBERTa-Large QA model...")
             self.roberta_model = pipeline(
                 "question-answering",
-                model="deepset/roberta-base-squad2",
+                model="deepset/roberta-large-squad2",
                 device=-1  # CPU for M1 compatibility
             )
             
@@ -795,7 +795,7 @@ Answer:"""
             logger.error(f"DistilBERT inference error: {e}")
             results['distilbert'] = {'error': str(e)}
         
-        # Model 3: RoBERTa QA (Safer model)
+        # Model 3: RoBERTa-Large QA (Advanced model with better performance)
         try:
             roberta_start = time.time()
             
@@ -806,10 +806,21 @@ Answer:"""
             
             if qa_context:
                 roberta_result = self.roberta_model(question=question, context=qa_context)
-                roberta_answer = roberta_result['answer']
-                confidence = roberta_result['score']
+                
+                # Handle different response formats
+                if isinstance(roberta_result, dict):
+                    roberta_answer = roberta_result.get('answer', '')
+                    confidence = roberta_result.get('score', 0.0)
+                elif isinstance(roberta_result, list) and len(roberta_result) > 0:
+                    # Sometimes pipeline returns a list with one result
+                    first_result = roberta_result[0]
+                    roberta_answer = first_result.get('answer', '')
+                    confidence = first_result.get('score', 0.0)
+                else:
+                    roberta_answer = "Unable to process RoBERTa-Large response format"
+                    confidence = 0.0
             else:
-                roberta_answer = "No context provided for RoBERTa QA model"
+                roberta_answer = "No context provided for RoBERTa-Large QA model"
                 confidence = 0.0
             
             roberta_time = time.time() - roberta_start
@@ -818,12 +829,12 @@ Answer:"""
                 'answer': roberta_answer,
                 'confidence': confidence,
                 'inference_time': roberta_time,
-                'model_name': 'roberta-base-squad2',
+                'model_name': 'roberta-large-squad2',
                 'context_used': len(qa_context.split()) if qa_context else 0
             }
             
         except Exception as e:
-            logger.error(f"RoBERTa inference error: {e}")
+            logger.error(f"RoBERTa-Large inference error: {e}")
             results['roberta'] = {'error': str(e)}
         
         total_time = time.time() - start_time

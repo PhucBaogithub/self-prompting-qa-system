@@ -522,9 +522,9 @@ HTML_TEMPLATE = """
                         <button class="btn btn-secondary" onclick="runInference('distilbert')" disabled id="distil-btn">
                             DistilBERT Only
                         </button>
-                        <button class="btn btn-secondary" onclick="runInference('roberta')" disabled id="roberta-btn">
-                            RoBERTa Only
-                        </button>
+                                        <button class="btn btn-secondary" onclick="runInference('roberta')" disabled id="roberta-btn">
+                    RoBERTa-Large Only
+                </button>
                         <button class="btn btn-primary" onclick="runInference('all')" disabled id="all-btn">
                             Compare All Models
                         </button>
@@ -621,10 +621,22 @@ HTML_TEMPLATE = """
             <h3>Model Performance Visualization</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                 <div>
-                    <canvas id="performance-chart" width="400" height="300"></canvas>
+                    <h4>Performance Metrics</h4>
+                    <canvas id="performance-chart" width="400" height="250"></canvas>
                 </div>
                 <div>
-                    <canvas id="metrics-comparison-chart" width="400" height="300"></canvas>
+                    <h4>Model Comparison</h4>
+                    <canvas id="model-comparison-chart" width="400" height="250"></canvas>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                <div>
+                    <h4>Inference Time Distribution</h4>
+                    <canvas id="inference-time-chart" width="400" height="250"></canvas>
+                </div>
+                <div>
+                    <h4>Accuracy Rating Distribution</h4>
+                    <canvas id="accuracy-rating-chart" width="400" height="250"></canvas>
                 </div>
             </div>
         </div>
@@ -648,7 +660,9 @@ HTML_TEMPLATE = """
 
         // Chart instances
         let performanceChart = null;
-        let metricsComparisonChart = null;
+        let modelComparisonChart = null;
+        let inferenceTimeChart = null;
+        let accuracyRatingChart = null;
 
         function log(message) {
             const logContainer = document.getElementById('log-container');
@@ -891,7 +905,7 @@ HTML_TEMPLATE = """
             
             if (mode === 'all' || mode === 'roberta') {
                 if (results.roberta) {
-                    const modelDiv = createModelResult('RoBERTa', results.roberta, referenceComparison.model_comparisons?.roberta);
+                    const modelDiv = createModelResult('RoBERTa-Large', results.roberta, referenceComparison.model_comparisons?.roberta);
                     comparisonContainer.appendChild(modelDiv);
                 }
             }
@@ -1127,11 +1141,25 @@ HTML_TEMPLATE = """
                 return;
             }
             
-            // Create performance metrics chart
+            // Create performance metrics horizontal bar chart
             createPerformanceChart(modelNames, accuracy, precision, recall, f1Score);
             
-            // Create inference time comparison chart
+            // Create model comparison bar chart
+            createModelComparisonChart(modelNames, recall, f1Score);
+            
+            // Create inference time doughnut chart
             createInferenceTimeChart(modelNames, inferenceTime);
+            
+            // Create accuracy rating pie chart
+            const accuracyRatings = modelNames.map((name, index) => {
+                const acc = accuracy[index];
+                if (acc >= 85) return 'Excellent';
+                if (acc >= 75) return 'Very Good';
+                if (acc >= 65) return 'Good';
+                if (acc >= 55) return 'Fair';
+                return 'Poor';
+            });
+            createAccuracyRatingChart(modelNames, accuracyRatings);
             
             visualizationSection.style.display = 'block';
         }
@@ -1162,7 +1190,53 @@ HTML_TEMPLATE = """
                             backgroundColor: 'rgba(255, 193, 7, 0.6)',
                             borderColor: 'rgba(255, 193, 7, 1)',
                             borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Performance Metrics (Compact)'
                         },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: 10
+                    }
+                }
+            });
+        }
+
+        function createModelComparisonChart(modelNames, recall, f1Score) {
+            const ctx = document.getElementById('model-comparison-chart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (modelComparisonChart) {
+                modelComparisonChart.destroy();
+            }
+            
+            modelComparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: modelNames,
+                    datasets: [
                         {
                             label: 'Recall',
                             data: recall,
@@ -1184,7 +1258,7 @@ HTML_TEMPLATE = """
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Model Performance Metrics'
+                            text: 'Model Quality Comparison'
                         },
                         legend: {
                             display: true,
@@ -1207,11 +1281,11 @@ HTML_TEMPLATE = """
         }
 
         function createInferenceTimeChart(modelNames, inferenceTime) {
-            const ctx = document.getElementById('metrics-comparison-chart').getContext('2d');
+            const ctx = document.getElementById('inference-time-chart').getContext('2d');
             
             // Destroy existing chart if it exists
-            if (metricsComparisonChart) {
-                metricsComparisonChart.destroy();
+            if (inferenceTimeChart) {
+                inferenceTimeChart.destroy();
             }
             
             // Create color array for each model
@@ -1221,7 +1295,7 @@ HTML_TEMPLATE = """
                 'rgba(75, 192, 192, 0.6)'
             ];
             
-            metricsComparisonChart = new Chart(ctx, {
+            inferenceTimeChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: modelNames.map((name, index) => name + ' (' + inferenceTime[index].toFixed(3) + 's)'),
@@ -1237,7 +1311,68 @@ HTML_TEMPLATE = """
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Inference Time Comparison'
+                            text: 'Inference Time Distribution'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createAccuracyRatingChart(modelNames, accuracyRatings) {
+            const ctx = document.getElementById('accuracy-rating-chart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (accuracyRatingChart) {
+                accuracyRatingChart.destroy();
+            }
+            
+            // Count rating distribution
+            const ratingCount = {};
+            const ratingColors = {
+                'Excellent': 'rgba(40, 167, 69, 0.6)',
+                'Very Good': 'rgba(108, 117, 125, 0.6)',
+                'Good': 'rgba(255, 193, 7, 0.6)',
+                'Fair': 'rgba(220, 53, 69, 0.6)',
+                'Poor': 'rgba(108, 117, 125, 0.6)'
+            };
+            
+            // Initialize rating count
+            Object.keys(ratingColors).forEach(rating => {
+                ratingCount[rating] = 0;
+            });
+            
+            // Count accuracy ratings
+            accuracyRatings.forEach(rating => {
+                if (ratingCount[rating] !== undefined) {
+                    ratingCount[rating]++;
+                }
+            });
+            
+            const labels = Object.keys(ratingCount);
+            const data = Object.values(ratingCount);
+            const colors = labels.map(label => ratingColors[label]);
+            
+            accuracyRatingChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: colors.map(color => color.replace('0.6', '1')),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Accuracy Rating Distribution'
                         },
                         legend: {
                             display: true,
